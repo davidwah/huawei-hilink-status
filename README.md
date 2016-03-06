@@ -47,6 +47,7 @@ The utility uses the xmltodict module which can be installed using ```pip```:
 ```
 apt-get install python-pip
 pip install xmltodict
+pip install requests
 ```
 
 ## Usage example
