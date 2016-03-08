@@ -20,7 +20,7 @@ def to_size(size):
 
 def is_hilink(device_ip):
     try:
-        r = requests.get(url='http://' + device_ip + '/api/device/information', timeout=(2.0,2.0))
+        r = requests.get(url='http://' + device_ip + '/api/device/information', timeout=(int(2),int(2)))
     except requests.exceptions.RequestException as e:
         print ("Error: "+str(e))
         return False;
