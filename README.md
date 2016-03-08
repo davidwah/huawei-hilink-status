@@ -5,9 +5,20 @@ Unsophisticated Python command-line utility to show device information and the c
 
 # Huawei Hi-Link 3G Modem RasPi Setup 
 
-I followed the techmind guide which worked well with the Huawei e3231 which operates as a 'HiLink' modem: [http://www.techmind.org/rpi](http://www.techmind.org/rpi)
+**Tested with  Huawei e3231**
 
-The main steps in the event that the techmind guide is not available are:
+## Setup power supply 
+
+If using a newer Raspberry Pi (B+,2 or 3) the Pi should be able to power the USB modem direclty without a y-cable ot usb hub if max power mode is tured on. Ensure a decent 2A PSU is used:
+
+    sudo nano /boot/config.txt
+
+Add the following at bottom of file then save and reboot:
+
+    max_usb_current=1
+    
+For more info on what this does see [forum post](https://www.raspberrypi.org/forums/viewtopic.php?f=29&t=100244) 
+    
 
 1) Install sg3-utils:
 
