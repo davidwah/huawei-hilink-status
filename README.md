@@ -1,11 +1,11 @@
-huawei-hilink-status
+Huawei-HiLink
 ===================
 
-Unsophisticated Python command-line utility to show device information and the connection status from Huawei HiLink modems.
+Setup Huawei-HiLink USB modem to work on a RaspberryPi and view it's status 
 
-# Huawei Hi-Link 3G Modem RasPi Setup 
+# Huawei Hi-Link 3G Modem Raspberry Pi Setup 
 
-**Tested with  Huawei e3231**
+**Tested with  Huawei E3231 and E3131**
 
 ## Setup power supply 
 
@@ -24,13 +24,19 @@ For more info on what this does see [forum post](https://www.raspberrypi.org/for
 
     sudo apt-get install sg3-utils
 
-2) After restarting the raspberrypi, the usb dongle will likely need to be placed in the correct mode:
+2) Change Huawei Hi-Link USB  mode
+
+`$ lsusb` will probably return `12d1:1f01 Huawei Technologies Co., Ltd.` this is mass storage mode. We need Hi-Link USB modem mode. To switch modes enter command: 
 
     sudo /usr/bin/sg_raw /dev/sr0 11 06 20 00 00 00 00 00 01 00
+    
+`$ lsusb` should now return `12d1:14db Huawei Technologies Co., Ltd.`
 
-3) To automate this step so that the pi always boots up into the correct mode.
+[See here](http://tjworld.net/wiki/Huawei/E3131UsbHspa) for more information on Huawei USB modes and AT commands. 
 
-Create the following file:
+3) Set USB mode at boot
+
+To ensure correct USB mode is set on each boot, create the following file:
 
     sudo nano /etc/udev/rules.d/10-Huawei.rules
 
@@ -47,11 +53,15 @@ and add the following lines:
     allow-hotplug eth1
     iface eth1 inet dhcp
 
-Complete the setup by rebooting the pi:
+Now try and start the interface 
 
-    sudo reboot
+    sudo ifup eth1 
 
-_For debugging: typing the command lsusb is useful, the Huawei Technologies entry should be in mode: 12d1:14db not 12d1:1f01_
+`ifconfig` should now show that `eth` is connected to gateway `192.168.1.1`. This is the default IP of the Hi-Link modem. If the gateway of `eth0` (your router) is also this same IP this will cause and issue for testing. 
+
+You may need to reboot the Pi. 
+
+
 
 # Status Utility Installation
 The utility uses the xmltodict module which can be installed using ```pip```:
