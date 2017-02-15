@@ -7,7 +7,7 @@ Setup Huawei-HiLink USB modem to work on a RaspberryPi and view it's status
 
 **Tested with  Huawei E3231 and E3131**
 
-\* caution: the E3131 comes in several different hardware variant, make sure your hardware can support **Hi-Link** mode.
+\* **Caution:** the E3131 comes in several different hardware variant, make sure your hardware can support **Hi-Link** mode.
 
 ## Setup power supply 
 
