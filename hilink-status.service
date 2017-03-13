@@ -1,0 +1,12 @@
+[Unit]
+Description=Huawei Hi-Link USB 3G Status to MQTT
+After=multi-user.target
+
+[Service]
+Type=idle
+ExecStart=/usr/bin/python /home/pi/huawei-hilink-status/hilink-mqtt.py
+Restart=always
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target

@@ -7,67 +7,7 @@ import xmltodict
 import requests
 import time
 import math
-from ConfigParser import SafeConfigParser
-import paho.mqtt.client as mqtt
-from datetime import datetime
-import logging
-import os
 
-# global
-mqtt_connection_status = 0
-mqtt_signal_strength  = 0
-mqtt_signal_level  = 0
-mqtt_network_type  = 0
-mqtt_current_connection_time = 0
-mqtt_total_upload = 0
-mqtt_total_download = 0
-mqtt_current_upload = 0
-mqtt_current_download = 0
-mqtt_sms =0
-
-
-
-config_file = 'config.ini'
-
-logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-logging.info("Startup Huawei HiLink Status: " + datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-config_file_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), config_file)
-
-# Get login details from 'config.ini'
-parser = SafeConfigParser()
-if os.path.exists(config_file_path):
-  logging.info("Loaded config file " + config_file_path)
-  #candidates = [ 'config.ini', 'my_config.ini' ]
-  candidates = config_file_path
-  found = parser.read(candidates)
-  device_ip = parser.get('hilink-status', 'hilink_ip')
-  mqtt_host = parser.get('hilink-status', 'mqtt_host')
-  mqtt_port = parser.get('hilink-status', 'mqtt_port')
-  mqtt_username = parser.get('hilink-status', 'mqtt_username')
-  mqtt_password = parser.get('hilink-status', 'mqtt_password')
-  mqtt_topic = parser.get('hilink-status', 'mqtt_topic')
-  GET_UPDATE_INTERVAL = parser.get('hilink-status', 'update_interval_min')
-  logging.info("updating data every " + GET_UPDATE_INTERVAL +"min")
-else:
-  logging.error("ERROR: Config file not found " + config_file_path)
-  quit()
-
-# The callback for when the client receives a CONNACK response from the server.
-def on_connect(client, userdata, flags, rc):
-  logging.info("Connected to MQTT host " + mqtt_host + " with result code "+str(rc))
-  logging.info("Publishing to topic: " + mqtt_topic)
-  client.publish(mqtt_topic, "MQTT connected");
-  
-client = mqtt.Client()
-# Callback when MQTT is connected
-client.on_connect = on_connect
-# Connect to MQTT
-client.username_pw_set(mqtt_username, mqtt_password);
-client.connect(mqtt_host, mqtt_port, 60)
-client.publish(mqtt_topic, "Connecting to MQTT host " + mqtt_host);
-# Non-blocking MQTT subscription loop
-client.loop_start()
-  
 def to_size(size):
    if (size == 0):
        return '0 Bytes'
@@ -82,7 +22,7 @@ def is_hilink(device_ip):
     try:
         r = requests.get(url='http://' + device_ip + '/api/device/information', timeout=(int(2),int(2)))
     except requests.exceptions.RequestException as e:
-        logging.error("Error: "+str(e))
+        print ("Error: "+str(e))
         return False;
         
     if r.status_code != 200:
@@ -96,7 +36,7 @@ def call_api(device_ip, resource, xml_attribs=True):
     try:
         r = requests.get(url='http://' + device_ip + resource, timeout=(2.0,2.0))
     except requests.exceptions.RequestException as e:
-        logging.error("Error: "+str(e))
+        print ("Error: "+str(e))
         return False;
     if r.status_code == 200:
     	d = xmltodict.parse(r.text, xml_attribs=xml_attribs)
@@ -194,29 +134,22 @@ def get_signal_level(level):
         result = '*****'
     return result
 
-def traffic_statistics(device_ip, connection_status):
+def print_traffic_statistics(device_ip, connection_status):
     d = call_api(device_ip, '/api/monitoring/traffic-statistics')
     current_connect_time = d['response']['CurrentConnectTime']
     current_upload = d['response']['CurrentUpload']
     current_download = d['response']['CurrentDownload']
     total_upload = d['response']['TotalUpload']
     total_download = d['response']['TotalDownload']
-    global mqtt_current_connection_time, mqtt_total_upload, mqtt_total_download, mqtt_current_upload, mqtt_current_download
 
     if connection_status == '901':
-        mqtt_current_connection_time = time.strftime('%H:%M:%S', time.gmtime(float(current_connect_time)))
-        logging.info('    Connected for: ' + mqtt_current_connection_time + ' (hh:mm:ss)')
-        mqtt_current_download = to_size(float(current_download))
-        logging.info('    Downloaded: ' + mqtt_current_download)
-        mqtt_current_upload = to_size(float(current_upload))
-        logging.info('    Uploaded: ' + mqtt_current_upload)
-    mqtt_total_download = to_size(float(total_download))
-    logging.info('  Total downloaded: ' + mqtt_total_download)
-    mqtt_total_upload = to_size(float(total_upload))
-    logging.info('  Total uploaded: ' + mqtt_total_upload)
+        print('    Connected for: ' + time.strftime('%H:%M:%S', time.gmtime(float(current_connect_time))) + ' (hh:mm:ss)')
+        print('    Downloaded: ' + to_size(float(current_download)))
+        print('    Uploaded: ' + to_size(float(current_upload)))
+    print('  Total downloaded: ' + to_size(float(total_download)))
+    print('  Total uploaded: ' + to_size(float(total_upload)))
 
-def connection_status(device_ip):
-    global mqtt_connection_status, mqtt_signal_strength, mqtt_signal_level, mqtt_network_type
+def print_connection_status(device_ip):
     d = call_api(device_ip, '/api/monitoring/status')
     connection_status = d['response']['ConnectionStatus']
     signal_strength = d['response']['SignalStrength']
@@ -235,25 +168,21 @@ def connection_status(device_ip):
     if r.status_code == 200:
         public_ip = r.text.rstrip()
 
-    mqtt_connection_status = get_connection_status(connection_status)
-    logging.info('  Connection status: ' + mqtt_connection_status)
+    print('  Connection status: ' + get_connection_status(connection_status))
     if connection_status == '901':
-        mqtt_network_type = get_network_type(network_type)
-        mqtt_signal_level = get_signal_level(signal_level)
-        mqtt_signal_strength = signal_strength
-        logging.info('    Network type: ' + mqtt_network_type)
-        logging.info('    Signal level: ' + mqtt_signal_level + ' (' + mqtt_signal_strength + '%)')
-        logging.info('    Roaming: ' + get_roaming_status(roaming_status))
+        print('    Network type: ' + get_network_type(network_type))
+        print('    Signal level: ' + get_signal_level(signal_level) + ' (' + signal_strength + '%)')
+        print('    Roaming: ' + get_roaming_status(roaming_status))
     if wan_ip is not None:
-        logging.info('    Modem WAN IP address: ' +  wan_ip)
-    logging.info('    Public IP address: ' + public_ip)
-    logging.info('    DNS IP addresses: ' + primary_dns_ip + ', ' + secondary_dns_ip)
+        print('    Modem WAN IP address: ' +  wan_ip)
+    print('    Public IP address: ' + public_ip)
+    print('    DNS IP addresses: ' + primary_dns_ip + ', ' + secondary_dns_ip)
     if wifi_status == '1':
-        logging.info('    WIFI users\t\t' + wifi_users_current + ' (of ' + wifi_users_max + ')')
+        print('    WIFI users\t\t' + wifi_users_current + ' (of ' + wifi_users_max + ')')
 
     return connection_status
 
-def device_info(device_ip):
+def print_device_info(device_ip):
     d = call_api(device_ip, '/api/device/information')
     device_name = d['response']['DeviceName']
     serial_number = d['response']['SerialNumber']
@@ -264,70 +193,41 @@ def device_info(device_ip):
     mac_address2 = d['response']['MacAddress2']
     product_family = d['response']['ProductFamily']
 
-    logging.info('Huawei ' + device_name + ' ' + product_family + ' Modem (IMEI: ' + imei + ')')
-    logging.info('  Hardware version: ' + hardware_version)
-    logging.info('  Software version: ' + software_version)
-    logging.info('  Serial: ' + serial_number)
-    # print('  MAC address (modem): ' + mac_address1, end='')
-    # if mac_address2 is not None:
-    #     print('\tMAC address (WiFi): ' + mac_address2)
-    # else:
-    #     print('')
+    print('Huawei ' + device_name + ' ' + product_family + ' Modem (IMEI: ' + imei + ')')
+    print('  Hardware version: ' + hardware_version)
+    print('  Software version: ' + software_version)
+    print('  Serial: ' + serial_number)
+    print('  MAC address (modem): ' + mac_address1, end='')
+    if mac_address2 is not None:
+        print('\tMAC address (WiFi): ' + mac_address2)
+    else:
+        print('')
 
-def provider(device_ip, connection_status):
+def print_provider(device_ip, connection_status):
     d = call_api(device_ip, '/api/net/current-plmn')
     state = d['response']['State']
     provider_name = d['response']['FullName']
     if connection_status == '901':
-        logging.info('    Network operator: ' + provider_name)
+        print('    Network operator: ' + provider_name)
 
-def unread(device_ip):
+def print_unread(device_ip):
     d = call_api(device_ip, '/api/monitoring/check-notifications')
-    global mqtt_sms
     unread_messages = d['response']['UnreadMessage']
     if unread_messages is not None and int(unread_messages) > 0:
-        logging.info('  Unread SMS: ' + unread_messages)
-        mqtt_sms = unread_messages
+        print('  Unread SMS: ' + unread_messages)
 
+device_ip = '192.168.1.1'
 if len(sys.argv) == 2:
     device_ip = sys.argv[1]
+  
+if not is_hilink(device_ip):
+    print("Can't find a Huawei HiLink device on " + device_ip)
+    print('')
+    sys.exit(-1)
 
-def mqtt_publish():
-    logging.info("Publish to MQTT")
-    client.publish(mqtt_topic + "/connection_status", mqtt_connection_status)
-    client.publish(mqtt_topic + "/signal_strength", mqtt_signal_level)
-    client.publish(mqtt_topic + "/signal_level", mqtt_signal_level)
-    client.publish(mqtt_topic + "/network_type", mqtt_signal_strength)
-    client.publish(mqtt_topic + "/current_connection_time", mqtt_current_connection_time)
-    client.publish(mqtt_topic + "/total_upload", mqtt_total_upload)
-    client.publish(mqtt_topic + "/total_download", mqtt_total_download)
-    client.publish(mqtt_topic + "/current_upload", mqtt_current_upload)
-    client.publish(mqtt_topic + "/current_download", mqtt_current_download)
-    client.publish(mqtt_topic + "/sms", mqtt_sms)
-
-if is_hilink(device_ip):
-  device_info(device_ip)
-  connection_status = connection_status(device_ip)
-  provider(device_ip, connection_status)
-  traffic_statistics(device_ip, connection_status)
-  unread(device_ip)
-  logging.info('')
-  mqtt_publish()
-else:
-  logging.error("Can't find a Huawei HiLink device on " + device_ip)
-
-
-
-
-
-    
-# mqtt_publish()
-
-# # Then schedule
-# logging.info("Schedule API update every " + GET_UPDATE_INTERVAL + "min")
-# schedule.every(int(GET_UPDATE_INTERVAL)).minutes.do(mqtt_publish)
-
-# while True:
-#     schedule.run_pending()
-#     time.sleep(1)
-
+print_device_info(device_ip)
+connection_status = print_connection_status(device_ip)
+print_provider(device_ip, connection_status)
+print_traffic_statistics(device_ip, connection_status)
+print_unread(device_ip)
+print('')

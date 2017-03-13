@@ -27,7 +27,7 @@ $ nano config.ini
 Test with:
 
 
-`$ .hstatuws.py`
+`$ ./hilink-mqtt.py`
 
 Run as service:
 
