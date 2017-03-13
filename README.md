@@ -1,15 +1,46 @@
 Huawei-HiLink
 ===================
 
-Setup Huawei-HiLink USB modem to work on a RaspberryPi and view it's status 
+Setup Huawei-HiLink USB modem to work on a RaspberryPi and view it's status
 
-# Huawei Hi-Link 3G Modem Raspberry Pi Setup 
+## Install Requirements
+
+Requires python 2.7.9 & python pip
+
+## Install
+
+```
+$ pip install schedule datetime paho-mqtt time xmltodict
+$ git clone github.com/openenergymonitor/huawei-hilink-status
+```
+
+## Create config
+
+```
+$ cd huawei-hilink-status
+$ cp default.config.ini config.ini
+$ nano config.ini
+```
+
+## Run
+
+Test with:
+
+
+`$ .hstatuws.py`
+
+Run as service:
+
+
+***
+
+# Huawei Hi-Link 3G Modem Raspberry Pi Setup
 
 **Tested with  Huawei E3231 and E3131**
 
 \* **Caution:** the E3131 comes in several different hardware variants, make sure your hardware can support **Hi-Link** mode.
 
-## Setup power supply 
+## Setup power supply
 
 If using a newer Raspberry Pi (B+,2 or 3) the Pi should be able to power the USB modem direclty without a y-cable ot usb hub if max power mode is tured on. Ensure a decent 2A PSU is used:
 
@@ -19,7 +50,7 @@ Add the following at bottom of file then save and reboot:
 
     max_usb_current=1
     
-For more info on what this does see [forum post](https://www.raspberrypi.org/forums/viewtopic.php?f=29&t=100244) 
+For more info on what this does see [forum post](https://www.raspberrypi.org/forums/viewtopic.php?f=29&t=100244)
     
 
 1) Install sg3-utils:
@@ -28,13 +59,13 @@ For more info on what this does see [forum post](https://www.raspberrypi.org/for
 
 2) Change Huawei Hi-Link USB  mode
 
-`$ lsusb` will probably return `12d1:1f01 Huawei Technologies Co., Ltd.` this is mass storage mode. We need Hi-Link USB modem mode. To switch modes enter command: 
+`$ lsusb` will probably return `12d1:1f01 Huawei Technologies Co., Ltd.` this is mass storage mode. We need Hi-Link USB modem mode. To switch modes enter command:
 
     sudo /usr/bin/sg_raw /dev/sr0 11 06 20 00 00 00 00 00 01 00
     
 `$ lsusb` should now return `12d1:14db Huawei Technologies Co., Ltd.`
 
-[See here](http://tjworld.net/wiki/Huawei/E3131UsbHspa) for more information on Huawei USB modes and AT commands. 
+[See here](http://tjworld.net/wiki/Huawei/E3131UsbHspa) for more information on Huawei USB modes and AT commands.
 
 3) Set USB mode at boot
 
@@ -55,13 +86,13 @@ and add the following lines:
     allow-hotplug eth1
     iface eth1 inet dhcp
 
-Now try and start the interface 
+Now try and start the interface
 
-    sudo ifup eth1 
+    sudo ifup eth1
 
-`ifconfig` should now show that `eth` is connected to gateway `192.168.1.1`. This is the default IP of the Hi-Link modem. If the gateway of `eth0` (your router) is also this same IP this will cause and issue for testing. 
+`ifconfig` should now show that `eth` is connected to gateway `192.168.1.1`. This is the default IP of the Hi-Link modem. If the gateway of `eth0` (your router) is also this same IP this will cause and issue for testing.
 
-You may need to reboot the Pi. 
+You may need to reboot the Pi.
 
 
 
