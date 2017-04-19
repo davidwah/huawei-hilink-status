@@ -31,6 +31,26 @@ Test with:
 
 Run as service:
 
+*Create systemd service, assuming repo was cloned to `/home/pi` folder on a RaspberryPi, adjust paths if needed*
+
+`$ sudo ln -s /home/pi/huawei-hilink-status/hilink-status.service /etc/systemd/system/hilink-status.service`
+
+Set permissions:
+
+`sudo chmod 644  /etc/systemd/system/hilink-status.service`
+
+Reload systemd then enable the service at startup:
+
+```
+$ sudo systemctl daemon-reload
+$ sudo systemctl enable hilink-status.service
+$ sudo systemctl start hilink-status.service
+```
+
+Check service status and view log snippet with:
+
+`sudo systemctl status hilink-status.service`
+
 
 ***
 
@@ -49,9 +69,9 @@ If using a newer Raspberry Pi (B+,2 or 3) the Pi should be able to power the USB
 Add the following at bottom of file then save and reboot:
 
     max_usb_current=1
-    
+
 For more info on what this does see [forum post](https://www.raspberrypi.org/forums/viewtopic.php?f=29&t=100244)
-    
+
 
 1) Install sg3-utils:
 
@@ -62,7 +82,7 @@ For more info on what this does see [forum post](https://www.raspberrypi.org/for
 `$ lsusb` will probably return `12d1:1f01 Huawei Technologies Co., Ltd.` this is mass storage mode. We need Hi-Link USB modem mode. To switch modes enter command:
 
     sudo /usr/bin/sg_raw /dev/sr0 11 06 20 00 00 00 00 00 01 00
-    
+
 `$ lsusb` should now return `12d1:14db Huawei Technologies Co., Ltd.`
 
 [See here](http://tjworld.net/wiki/Huawei/E3131UsbHspa) for more information on Huawei USB modes and AT commands.
@@ -127,4 +147,3 @@ Huawei E3276 LTE Modem (IMEI: 861711012616361)
   Total downloaded: 47.69 MB
   Total uploaded: 19.86 MB
 ```
-
