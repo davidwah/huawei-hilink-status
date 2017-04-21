@@ -118,7 +118,7 @@ def get_roaming_status(status):
         result = 'Disabled'
     elif status == '1':
         result = 'Enabled'
-    return resultx
+    return result
 
 def get_signal_level(level):
     result = '-'
