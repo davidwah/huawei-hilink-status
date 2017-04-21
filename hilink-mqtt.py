@@ -70,7 +70,7 @@ def on_connect(client, userdata, flags, rc):
   logging.info("Connected to MQTT host " + mqtt_host + " with result code "+str(rc))
   logging.info("Publishing to topic: " + mqtt_topic)
   client.publish(mqtt_topic, "MQTT connected");
-  
+
 client = mqtt.Client()
 # Callback when MQTT is connected
 client.on_connect = on_connect
@@ -80,7 +80,7 @@ client.connect(mqtt_host, mqtt_port, 60)
 client.publish(mqtt_topic, "Connecting to MQTT host " + mqtt_host);
 # Non-blocking MQTT subscription loop
 client.loop_start()
-  
+
 def to_size(size):
    if (size == 0):
        return '0 Bytes'
@@ -97,7 +97,7 @@ def is_hilink(device_ip):
     except requests.exceptions.RequestException as e:
         logging.error("Error: "+str(e))
         return False;
-        
+
     if r.status_code != 200:
         return False
     d = xmltodict.parse(r.text, xml_attribs=True)
@@ -120,24 +120,24 @@ def call_api(device_ip, resource, xml_attribs=True):
       raise Exception('Received status code ' + str(r.status_code) + ' for URL ' + r.url)
 
 def get_connection_status(status):
-    result = 'n/a'
-    if status == '2' or status == '3' or status == '5' or status == '8' or status == '20' or status == '21' or status == '23' or status == '27' or status == '28' or status == '29' or status == '30' or status == '31' or status == '32' or status == '33':
-        result = 'Connection failed, the profile is invalid'
-    elif status == '7' or status == '11' or status == '14' or status == '37':
-        result = 'Network access not allowed'
-    elif status == '12' or status == '13':
-        result = 'Connection failed, roaming not allowed'
-    elif status == '201':
-        result = 'Connection failed, bandwidth exceeded'
-    elif status == '900':
-        result = 'Connecting'
-    elif status == '901':
-        result = 'Connected'
-    elif status == '902':
-        result = 'Disconnected'
-    elif status == '903':
-        result = 'Disconnecting'
-    return result
+    # result = 'n/a'
+    # if status == '2' or status == '3' or status == '5' or status == '8' or status == '20' or status == '21' or status == '23' or status == '27' or status == '28' or status == '29' or status == '30' or status == '31' or status == '32' or status == '33':
+    #     result = 'Connection failed, the profile is invalid'
+    # elif status == '7' or status == '11' or status == '14' or status == '37':
+    #     result = 'Network access not allowed'
+    # elif status == '12' or status == '13':
+    #     result = 'Connection failed, roaming not allowed'
+    # elif status == '201':
+    #     result = 'Connection failed, bandwidth exceeded'
+    # elif status == '900':
+    #     result = 'Connecting'
+    # elif status == '901':
+    #     result = 'Connected'
+    # elif status == '902':
+    #     result = 'Disconnected'
+    # elif status == '903':
+    #     result = 'Disconnecting'
+    return status
 
 def get_network_type(type):
     result = 'n/a'
@@ -194,18 +194,7 @@ def get_roaming_status(status):
     return result
 
 def get_signal_level(level):
-    result = '-'
-    if level == '1':
-        result = '*'
-    if level == '2':
-        result = '**'
-    if level == '3':
-        result = '***'
-    if level == '4':
-        result = '****'
-    if level == '5':
-        result = '*****'
-    return result
+    return level
 
 def traffic_statistics(device_ip, connection_status):
     d = call_api(device_ip, '/api/monitoring/traffic-statistics')
@@ -214,31 +203,34 @@ def traffic_statistics(device_ip, connection_status):
     current_download = d['response']['CurrentDownload']
     total_upload = d['response']['TotalUpload']
     total_download = d['response']['TotalDownload']
-    global mqtt_current_connection_time, mqtt_total_upload, mqtt_total_download, mqtt_current_upload, mqtt_current_download
+    global mqtt_current_connection_time, mqtt_total_upload, mqtt_total_download, mqtt_current_upload, mqtt_current_download, mqtt_total_data
 
     if connection_status == '901':
         formatted_current_connection_time = time.strftime('%H:%M:%S', time.gmtime(float(current_connect_time)))
         mqtt_current_connection_time = round( (float(current_connect_time) * 0.0166667) ,2)
         logging.info('    Connected for: ' + formatted_current_connection_time + ' (hh:mm:ss)')
-        
+
         # in Mb
-        mqtt_current_download = round(float(current_download) / 1024.0 / 1024.0 ,2)
+        mqtt_current_download = round(float(current_download) / 1024.0 / 1024.0 ,4)
         size_current_download = to_size(float(current_download))
         logging.info('    Downloaded: ' + size_current_download)
-        
-        mqtt_current_upload = round(float(current_upload) / 1024.0 / 1024.0 ,2)
+        #logging.info('    Downloaded MQTT: ' + str(mqtt_current_download))
+
+        mqtt_current_upload = round(float(current_upload) / 1024.0 / 1024.0 ,4)
         size_current_upload = to_size(float(current_upload))
         logging.info('    Uploaded: ' + size_current_upload)
-        
+        #logging.info('    Upload MQTT: ' + str(mqtt_current_upload))
+
     mqtt_total_download = round(float(total_download) / 1024.0 / 1024.0 ,2)
     size_total_download = to_size(float(total_download))
     logging.info('  Total downloaded: ' + size_total_download)
-    
-    mqtt_total_upload = round(float(total_download) / 1024.0 / 1024.0 ,2)
+
+    mqtt_total_upload = round(float(total_upload) / 1024.0 / 1024.0 ,2)
     size_total_upload = to_size(float(total_upload))
     logging.info('  Total uploaded: ' + size_total_upload)
-    
-    mqtt_total_data = round( (mqtt_total_upload + mqtt_total_download) , 2)
+
+    mqtt_total_data = mqtt_total_upload + mqtt_total_download
+    logging.info( '  Total Data: ' + str(mqtt_total_data) + ' MB')
 
 def connection_status(device_ip):
     global mqtt_connection_status, mqtt_signal_strength, mqtt_signal_level, mqtt_network_type
@@ -263,7 +255,7 @@ def connection_status(device_ip):
     mqtt_connection_status = get_connection_status(connection_status)
     logging.info('  Connection status: ' + mqtt_connection_status)
     if connection_status == '901':
-      
+
         formatted_network_type = get_network_type(network_type)
         mqtt_network_type = network_type
         mqtt_signal_level = get_signal_level(signal_level)
@@ -319,20 +311,6 @@ def unread(device_ip):
 if len(sys.argv) == 2:
     device_ip = sys.argv[1]
 
-def mqtt_publish():
-  if is_hilink(device_ip):
-      logging.info("Publish to MQTT")
-      client.publish(mqtt_topic + "/connection_status", mqtt_connection_status)
-      client.publish(mqtt_topic + "/signal_strength", mqtt_signal_strength)
-      client.publish(mqtt_topic + "/signal_level", mqtt_signal_level)
-      client.publish(mqtt_topic + "/network_type", mqtt_network_type)
-      client.publish(mqtt_topic + "/current_connection_time", mqtt_current_connection_time)
-      client.publish(mqtt_topic + "/current_upload", mqtt_current_upload)
-      client.publish(mqtt_topic + "/current_download", mqtt_current_download)
-      client.publish(mqtt_topic + "/total_upload", mqtt_total_upload)
-      client.publish(mqtt_topic + "/total_download", mqtt_total_download)
-      client.publish(mqtt_topic + "/total_data", mqtt_total_data)
-      # client.publish(mqtt_topic + "/sms", mqtt_sms)
 
 
 # Run once
@@ -343,10 +321,42 @@ if is_hilink(device_ip):
   traffic_statistics(device_ip, connection_status)
   unread(device_ip)
   logging.info('')
-  mqtt_publish()
+  i = datetime.now()
+  logging.info("Publish to MQTT %s" % i)
+  #client.publish(mqtt_topic + "/signal_strength", mqtt_signal_strength)
+  client.publish(mqtt_topic + "/signal_level", mqtt_signal_level)
+  client.publish(mqtt_topic + "/network_type", mqtt_network_type)
+  client.publish(mqtt_topic + "/current_connection_time", mqtt_current_connection_time)
+  client.publish(mqtt_topic + "/current_upload", mqtt_current_upload)
+  client.publish(mqtt_topic + "/current_download", mqtt_current_download)
+  client.publish(mqtt_topic + "/total_upload", mqtt_total_upload)
+  client.publish(mqtt_topic + "/total_download", mqtt_total_download)
+  client.publish(mqtt_topic + "/total_data", mqtt_total_data)
 else:
   logging.error("Can't find a Huawei HiLink device on " + device_ip)
 
+def mqtt_publish():
+  if is_hilink(device_ip):
+      device_info(device_ip)
+      connection_status = connection_status(device_ip)
+      provider(device_ip, connection_status)
+      traffic_statistics(device_ip, connection_status)
+      unread(device_ip)
+      logging.info('')
+      i = datetime.now()
+      logging.info("Publish to MQTT %s" % i)
+      client.publish(mqtt_topic + "/connection_status", mqtt_connection_status)
+      #client.publish(mqtt_topic + "/signal_strength", mqtt_signal_strength)
+      client.publish(mqtt_topic + "/signal_level", mqtt_signal_level)
+      client.publish(mqtt_topic + "/network_type", mqtt_network_type)
+      client.publish(mqtt_topic + "/current_connection_time", mqtt_current_connection_time)
+      client.publish(mqtt_topic + "/current_upload", mqtt_current_upload)
+      client.publish(mqtt_topic + "/current_download", mqtt_current_download)
+      client.publish(mqtt_topic + "/total_upload", mqtt_total_upload)
+      client.publish(mqtt_topic + "/total_download", mqtt_total_download)
+      client.publish(mqtt_topic + "/total_data", mqtt_total_data)
+
+      # client.publish(mqtt_topic + "/sms", mqtt_sms)
 
 # Then schedule
 logging.info("Schedule update every " + GET_UPDATE_INTERVAL + "min")
@@ -355,4 +365,3 @@ schedule.every(int(GET_UPDATE_INTERVAL)).minutes.do(mqtt_publish)
 while True:
     schedule.run_pending()
     time.sleep(1)
-
