@@ -16,7 +16,6 @@ import schedule
 
 # global
 mqtt_connection_status = 0
-
 # In %
 mqtt_signal_strength  = 0
 
@@ -208,26 +207,26 @@ def traffic_statistics(device_ip, connection_status):
     if connection_status == '901':
         formatted_current_connection_time = time.strftime('%H:%M:%S', time.gmtime(float(current_connect_time)))
         mqtt_current_connection_time = round( (float(current_connect_time) * 0.0166667) ,2)
-        logging.info('    Connected for: ' + formatted_current_connection_time + ' (hh:mm:ss)')
+        logging.info('    Connected for: ' + str(formatted_current_connection_time) + ' (hh:mm:ss)')
 
         # in Mb
         mqtt_current_download = round(float(current_download) / 1024.0 / 1024.0 ,4)
         size_current_download = to_size(float(current_download))
-        logging.info('    Downloaded: ' + size_current_download)
+        logging.info('    Downloaded: ' + str(size_current_download))
         #logging.info('    Downloaded MQTT: ' + str(mqtt_current_download))
 
         mqtt_current_upload = round(float(current_upload) / 1024.0 / 1024.0 ,4)
         size_current_upload = to_size(float(current_upload))
-        logging.info('    Uploaded: ' + size_current_upload)
+        logging.info('    Uploaded: ' + str(size_current_upload))
         #logging.info('    Upload MQTT: ' + str(mqtt_current_upload))
 
     mqtt_total_download = round(float(total_download) / 1024.0 / 1024.0 ,2)
     size_total_download = to_size(float(total_download))
-    logging.info('  Total downloaded: ' + size_total_download)
+    logging.info('  Total downloaded: ' + str(size_total_download))
 
     mqtt_total_upload = round(float(total_upload) / 1024.0 / 1024.0 ,2)
     size_total_upload = to_size(float(total_upload))
-    logging.info('  Total uploaded: ' + size_total_upload)
+    logging.info('  Total uploaded: ' + str(size_total_upload))
 
     mqtt_total_data = mqtt_total_upload + mqtt_total_download
     logging.info( '  Total Data: ' + str(mqtt_total_data) + ' MB')
@@ -298,7 +297,7 @@ def provider(device_ip, connection_status):
     state = d['response']['State']
     provider_name = d['response']['FullName']
     if connection_status == '901':
-        logging.info('    Network operator: ' + provider_name)
+        logging.info('    Network operator: ' + str(provider_name))
 
 def unread(device_ip):
     d = call_api(device_ip, '/api/monitoring/check-notifications')
@@ -311,37 +310,16 @@ def unread(device_ip):
 if len(sys.argv) == 2:
     device_ip = sys.argv[1]
 
+# connection_status = connection_status(device_ip)
 
-
-# Run once
-if is_hilink(device_ip):
-  device_info(device_ip)
-  connection_status = connection_status(device_ip)
-  provider(device_ip, connection_status)
-  traffic_statistics(device_ip, connection_status)
-  unread(device_ip)
-  logging.info('')
-  i = datetime.now()
-  logging.info("Publish to MQTT %s" % i)
-  #client.publish(mqtt_topic + "/signal_strength", mqtt_signal_strength)
-  client.publish(mqtt_topic + "/signal_level", mqtt_signal_level)
-  client.publish(mqtt_topic + "/network_type", mqtt_network_type)
-  client.publish(mqtt_topic + "/current_connection_time", mqtt_current_connection_time)
-  client.publish(mqtt_topic + "/current_upload", mqtt_current_upload)
-  client.publish(mqtt_topic + "/current_download", mqtt_current_download)
-  client.publish(mqtt_topic + "/total_upload", mqtt_total_upload)
-  client.publish(mqtt_topic + "/total_download", mqtt_total_download)
-  client.publish(mqtt_topic + "/total_data", mqtt_total_data)
-else:
-  logging.error("Can't find a Huawei HiLink device on " + device_ip)
 
 def mqtt_publish():
   if is_hilink(device_ip):
       device_info(device_ip)
-      connection_status = connection_status(device_ip)
+      connection_status(device_ip)
       provider(device_ip, connection_status)
       traffic_statistics(device_ip, connection_status)
-      unread(device_ip)
+    #   unread(device_ip)
       logging.info('')
       i = datetime.now()
       logging.info("Publish to MQTT %s" % i)
@@ -357,6 +335,18 @@ def mqtt_publish():
       client.publish(mqtt_topic + "/total_data", mqtt_total_data)
 
       # client.publish(mqtt_topic + "/sms", mqtt_sms)
+
+# Run once
+if is_hilink(device_ip):
+  device_info(device_ip)
+  connection_status(device_ip)
+  provider(device_ip, connection_status)
+  traffic_statistics(device_ip, connection_status)
+  # unread(device_ip)
+  logging.info('')
+  mqtt_publish()
+else:
+  logging.error("Can't find a Huawei HiLink device on " + device_ip)
 
 # Then schedule
 logging.info("Schedule update every " + GET_UPDATE_INTERVAL + "min")
