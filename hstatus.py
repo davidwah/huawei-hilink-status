@@ -24,7 +24,7 @@ def is_hilink(device_ip):
     except requests.exceptions.RequestException as e:
         print ("Error: "+str(e))
         return False;
-        
+
     if r.status_code != 200:
         return False
     d = xmltodict.parse(r.text, xml_attribs=True)
@@ -118,7 +118,7 @@ def get_roaming_status(status):
         result = 'Disabled'
     elif status == '1':
         result = 'Enabled'
-    return result
+    return resultx
 
 def get_signal_level(level):
     result = '-'
@@ -176,7 +176,7 @@ def print_connection_status(device_ip):
     if wan_ip is not None:
         print('    Modem WAN IP address: ' +  wan_ip)
     print('    Public IP address: ' + public_ip)
-    print('    DNS IP addresses: ' + primary_dns_ip + ', ' + secondary_dns_ip)
+    print('    DNS IP addresses: ' + str(primary_dns_ip) + ', ' + str(secondary_dns_ip))
     if wifi_status == '1':
         print('    WIFI users\t\t' + wifi_users_current + ' (of ' + wifi_users_max + ')')
 
@@ -219,7 +219,7 @@ def print_unread(device_ip):
 device_ip = '192.168.1.1'
 if len(sys.argv) == 2:
     device_ip = sys.argv[1]
-  
+
 if not is_hilink(device_ip):
     print("Can't find a Huawei HiLink device on " + device_ip)
     print('')
